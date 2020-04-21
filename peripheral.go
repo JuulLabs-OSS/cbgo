@@ -54,9 +54,7 @@ func (p Peripheral) Name() string {
 
 // SetDelegate: https://developer.apple.com/documentation/corebluetooth/cbperipheral/1518730-delegate
 func (p Peripheral) SetDelegate(dlg PeripheralDelegate) {
-	if p.ptr != nil {
-		addPeripheralDlg(p.ptr, dlg)
-	}
+	addPeripheralDlg(p.ptr, dlg)
 	C.cb_prph_set_delegate(p.ptr, C.bool(dlg != nil))
 }
 

@@ -15,3 +15,12 @@ type AdvFields struct {
 	ServiceUUIDs     []UUID
 	ServiceData      []AdvServiceData
 }
+
+// AdvData represents the configurable portion of outgoing advertisements.
+type AdvData struct {
+	LocalName    string
+	ServiceUUIDs []UUID
+
+	// If len>0, this overrides the other fields.
+	IBeaconData []byte
+}

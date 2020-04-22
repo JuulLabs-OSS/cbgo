@@ -1,6 +1,6 @@
 # cbgo
 
-cbgo implements Go bindings for [CoreBluetooth](https://developer.apple.com/documentation/corebluetooth?language=objc) central functionality.
+cbgo implements Go bindings for [CoreBluetooth](https://developer.apple.com/documentation/corebluetooth?language=objc).
 
 ## Documentation
 
@@ -10,7 +10,7 @@ Examples are in the `examples` directory.
 
 ## Scope
 
-cbgo implements all central functionality that is supported in macOS 10.13.
+cbgo aims to implement all functionality that is supported in macOS 10.13.
 
 ## Naming
 
@@ -18,7 +18,8 @@ Function and type names in cbgo are intended to match the corresponding CoreBlue
 
 * All cbgo identifiers start with a capital letter to make them public.
 * Named arguments in CoreBluetooth functions are eliminated.
+* Properties are implemented as a pair of functions (`PropertyName` and `SetPropertyName`).
 
 ## Issues
 
-cbgo makes no attempt to release CoreBluetooth objects allocated in the objective C code.  I don't anticipate this causing any issues during typical usage.  This could become noticeable if your process has a very long lifetime (months) or it interacts with hundreds of thousands of peripherals.
+There are definitely memory leaks.  ARC is not compatible with cgo, so objective C memory has to be managed manually.  I didn't see a set of consistent guidelines for object ownership in the CoreBluetooth documentation, so cbgo errs on the side of leaking.  Hopefully this is only an issue for very long running processes!  Any fixes here are much appreciated.

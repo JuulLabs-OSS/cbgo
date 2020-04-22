@@ -3,8 +3,9 @@
 #import <CoreLocation/CoreLocation.h>
 #import "bt.h"
 
-// cb.m: C functions for interfacing with CoreBluetooth.  This is necessary
-// because Go code cannot execute some objective C constructs directly.
+// cmgr.m: C functions for interfacing with CoreBluetooth central
+// functionality.  This is necessary because Go code cannot execute some
+// objective C constructs directly.
 
 CBCentralManager *
 cb_alloc_cmgr(bool pwr_alert, const char *restore_id)
@@ -13,6 +14,7 @@ cb_alloc_cmgr(bool pwr_alert, const char *restore_id)
     bt_init();
 
     NSMutableDictionary *opts = [[NSMutableDictionary alloc] init];
+    [opts autorelease];
 
     if (pwr_alert) {
         [opts setObject:[NSNumber numberWithBool:pwr_alert]
@@ -24,8 +26,8 @@ cb_alloc_cmgr(bool pwr_alert, const char *restore_id)
     }
 
     CBCentralManager *cm = [[CBCentralManager alloc] initWithDelegate:bt_dlg
-                                                queue:bt_queue
-                                              options:opts];
+                                                                queue:bt_queue
+                                                              options:opts];
     [cm retain];
     return cm;
 }
@@ -96,6 +98,7 @@ cb_cmgr_connect(void *cmgr, void *prph, const struct connect_opts *opts)
     CBPeripheral *pr = prph;
 
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    [dict autorelease];
 
     if (opts->notify_on_connection) {
         dict_set_bool(dict, CBConnectPeripheralOptionNotifyOnConnectionKey, true);
@@ -182,6 +185,13 @@ cb_cmgr_retrieve_prphs(void *cmgr, const struct string_arr *uuids)
     };
 }
 
+const char *
+cb_peer_identifier(void *peer)
+{
+    NSUUID *uuid = [(CBPeer *)peer identifier];
+    return [[uuid UUIDString] UTF8String];
+}
+
 void
 cb_prph_set_delegate(void *prph, bool set)
 {
@@ -193,13 +203,6 @@ cb_prph_set_delegate(void *prph, bool set)
     }
 
     ((CBPeripheral *)prph).delegate = del;
-}
-
-const char *
-cb_prph_identifier(void *prph)
-{
-    NSUUID *uuid = [(CBPeripheral *)prph identifier];
-    return [[uuid UUIDString] UTF8String];
 }
 
 const char *
@@ -220,8 +223,6 @@ void
 cb_prph_discover_svcs(void *prph, const struct string_arr *svc_uuid_strs)
 {
     NSArray *svc_uuids = strs_to_cbuuids(svc_uuid_strs);
-    [svc_uuids autorelease];
-
     [(CBPeripheral *)prph discoverServices:svc_uuids];
 }
 
@@ -229,8 +230,6 @@ void
 cb_prph_discover_included_svcs(void *prph, const struct string_arr *svc_uuid_strs, void *svc)
 {
     NSArray *svc_uuids = strs_to_cbuuids(svc_uuid_strs);
-    [svc_uuids autorelease];
-
     [(CBPeripheral *)prph discoverIncludedServices:svc_uuids forService:svc];
 }
 
@@ -238,8 +237,6 @@ void
 cb_prph_discover_chrs(void *prph, void *svc, const struct string_arr *chr_uuid_strs)
 {
     NSArray *chr_uuids = strs_to_cbuuids(chr_uuid_strs);
-    [chr_uuids autorelease];
-
     [(CBPeripheral *)prph discoverCharacteristics:chr_uuids forService:svc];
 }
 
@@ -414,6 +411,20 @@ cb_dsc_characteristic(void *dsc)
 struct byte_arr
 cb_dsc_value(void *dsc)
 {
-    NSData *nsd = ((CBDescriptor *)dsc).value;
-    return nsdata_to_byte_arr(nsd);
+    id val = ((CBDescriptor *)dsc).value;
+
+    // `value` returns a different type depending on the descriptor being
+    // queried!  Convert whatever got returned to a byte array.
+
+    if ([val isKindOfClass:[NSData class]]) {
+        return nsdata_to_byte_arr(val);
+    }
+
+    if ([val isKindOfClass:[NSString class]]) {
+        NSData *nsd = [val dataUsingEncoding:NSUTF8StringEncoding];
+        return nsdata_to_byte_arr(nsd);
+    }
+
+    // Unknown type.
+    return (struct byte_arr){0};
 }

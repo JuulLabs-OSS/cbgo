@@ -42,7 +42,7 @@ func addPeripheralDlg(ptr unsafe.Pointer, dlg PeripheralDelegate) {
 
 // Identifier: https://developer.apple.com/documentation/corebluetooth/cbpeer/1620687-identifier
 func (p Peripheral) Identifier() UUID {
-	cstr := C.cb_prph_identifier(p.ptr)
+	cstr := C.cb_peer_identifier(p.ptr)
 	return MustParseUUID(C.GoString(cstr))
 }
 

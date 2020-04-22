@@ -143,9 +143,31 @@ func btErrorToNSError(e *C.struct_bt_error) error {
 	}
 }
 
+func mallocObjArr(count int) C.struct_obj_arr {
+	if count <= 0 {
+		return C.struct_obj_arr{
+			objs:  nil,
+			count: 0,
+		}
+	}
+
+	data := mallocArr(count, unsafe.Sizeof(unsafe.Pointer(nil)))
+	return C.struct_obj_arr{
+		objs:  (*unsafe.Pointer)(data),
+		count: C.int(count),
+	}
+}
+
 // getStrArrElem retrieves an element from a `struct obj_arr` C object.
 func getObjArrElem(oa *C.struct_obj_arr, idx int) unsafe.Pointer {
 	addr := getArrElemAddr(unsafe.Pointer(oa.objs), unsafe.Sizeof(*oa.objs), idx)
 	dptr := (*unsafe.Pointer)(addr)
 	return *dptr
+}
+
+// setStrArrElem assigns an element in a `struct obj_arr` C object.
+func setObjArrElem(oa *C.struct_obj_arr, idx int, val unsafe.Pointer) {
+	addr := getArrElemAddr(unsafe.Pointer(oa.objs), unsafe.Sizeof(*oa.objs), idx)
+	dptr := (*unsafe.Pointer)(addr)
+	*dptr = val
 }

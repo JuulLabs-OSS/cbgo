@@ -5,6 +5,10 @@
 dispatch_queue_t bt_queue;
 static bool bt_loop_active;
 
+/**
+ * Universal delegate.  All callbacks get funnelled through this object before
+ * being translated to the appropriate Go calls.
+ */
 BTDlg *bt_dlg;
 
 /**

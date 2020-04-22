@@ -101,12 +101,12 @@ func BTCentralManagerDidUpdateState(cmgr unsafe.Pointer) {
 
 	dlg := findCentralManagerDlg(cmgr)
 	if dlg != nil {
-		dlg.DidUpdateState(CentralManager{cmgr})
+		dlg.CentralManagerDidUpdateState(CentralManager{cmgr})
 	}
 }
 
 //export BTCentralManagerWillRestoreState
-func BTCentralManagerWillRestoreState(cmgr unsafe.Pointer, opts *C.struct_restore_opts) {
+func BTCentralManagerWillRestoreState(cmgr unsafe.Pointer, opts *C.struct_cmgr_restore_opts) {
 	ropts := CentralManagerRestoreOpts{}
 
 	ropts.Peripherals = make([]Peripheral, opts.prphs.count)
@@ -127,7 +127,7 @@ func BTCentralManagerWillRestoreState(cmgr unsafe.Pointer, opts *C.struct_restor
 
 	dlg := findCentralManagerDlg(cmgr)
 	if dlg != nil {
-		dlg.WillRestoreState(CentralManager{cmgr}, ropts)
+		dlg.CentralManagerWillRestoreState(CentralManager{cmgr}, ropts)
 	}
 }
 
@@ -254,7 +254,7 @@ func BTPeripheralDidUpdateNotificationState(prph unsafe.Pointer, chr unsafe.Poin
 func BTPeripheralDidReadRSSI(prph unsafe.Pointer, rssi C.int, err *C.struct_bt_error) {
 	nserr := btErrorToNSError(err)
 
-	btlog.Debugf("PeripheralDidReadRSSI: prph=%v rssi=%v err=%v", prph, rssi, err)
+	btlog.Debugf("PeripheralDidReadRSSI: prph=%v rssi=%v err=%v", prph, rssi, nserr)
 
 	dlg := findPeripheralDlg(prph)
 	if dlg != nil {
@@ -286,5 +286,121 @@ func BTPeripheralDidModifyServices(prph unsafe.Pointer, inv_svcs *C.struct_obj_a
 	dlg := findPeripheralDlg(prph)
 	if dlg != nil {
 		dlg.DidModifyServices(Peripheral{prph}, svcs)
+	}
+}
+
+//export BTPeripheralManagerDidUpdateState
+func BTPeripheralManagerDidUpdateState(pmgr unsafe.Pointer) {
+	btlog.Debugf("PeripheralManagerDidUpdateState: pmgr=%v", pmgr)
+
+	dlg := findPeripheralManagerDlg(pmgr)
+	if dlg != nil {
+		dlg.PeripheralManagerDidUpdateState(PeripheralManager{pmgr})
+	}
+}
+
+//export BTPeripheralManagerWillRestoreState
+func BTPeripheralManagerWillRestoreState(pmgr unsafe.Pointer, opts *C.struct_pmgr_restore_opts) {
+	ropts := PeripheralManagerRestoreOpts{}
+
+	if opts.svcs.count > 0 {
+		ropts.Services = make([]MutableService, opts.svcs.count)
+		for i, _ := range ropts.Services {
+			ropts.Services[i] = MutableService{getObjArrElem(&opts.svcs, i)}
+		}
+	}
+
+	if opts.adv_data != nil {
+		ropts.AdvertisementData = &AdvData{
+			LocalName:    C.GoString(opts.adv_data.name),
+			ServiceUUIDs: mustStrArrToUUIDs(&opts.adv_data.svc_uuids),
+		}
+	}
+
+	btlog.Debugf("PeripheralManagerWillRestoreState: pmgr=%v opts=%+v", pmgr, ropts)
+
+	dlg := findPeripheralManagerDlg(pmgr)
+	if dlg != nil {
+		dlg.PeripheralManagerWillRestoreState(PeripheralManager{pmgr}, ropts)
+	}
+}
+
+//export BTPeripheralManagerDidAddService
+func BTPeripheralManagerDidAddService(pmgr unsafe.Pointer, svc unsafe.Pointer, err *C.struct_bt_error) {
+	nserr := btErrorToNSError(err)
+
+	btlog.Debugf("PeripheralManagerDidAddService: pmgr=%v err=%v", pmgr, nserr)
+
+	dlg := findPeripheralManagerDlg(pmgr)
+	if dlg != nil {
+		dlg.DidAddService(PeripheralManager{pmgr}, Service{svc}, nserr)
+	}
+}
+
+//export BTPeripheralManagerDidStartAdvertising
+func BTPeripheralManagerDidStartAdvertising(pmgr unsafe.Pointer, err *C.struct_bt_error) {
+	nserr := btErrorToNSError(err)
+
+	btlog.Debugf("PeripheralManagerDidStartAdvertising: pmgr=%v err=%+v", pmgr, nserr)
+
+	dlg := findPeripheralManagerDlg(pmgr)
+	if dlg != nil {
+		dlg.DidStartAdvertising(PeripheralManager{pmgr}, nserr)
+	}
+}
+
+//export BTPeripheralManagerCentralDidSubscribe
+func BTPeripheralManagerCentralDidSubscribe(pmgr unsafe.Pointer, cent unsafe.Pointer, chr unsafe.Pointer) {
+	btlog.Debugf("PeripheralManagerCentralDidSubscribe: pmgr=%v cent=%v chr=%v", pmgr, cent, chr)
+
+	dlg := findPeripheralManagerDlg(pmgr)
+	if dlg != nil {
+		dlg.CentralDidSubscribe(PeripheralManager{pmgr}, Central{cent}, Characteristic{chr})
+	}
+}
+
+//export BTPeripheralManagerCentralDidUnsubscribe
+func BTPeripheralManagerCentralDidUnsubscribe(pmgr unsafe.Pointer, cent unsafe.Pointer, chr unsafe.Pointer) {
+	btlog.Debugf("PeripheralManagerCentralDidUnsubscribe: pmgr=%v cent=%v chr=%v", pmgr, cent, chr)
+
+	dlg := findPeripheralManagerDlg(pmgr)
+	if dlg != nil {
+		dlg.CentralDidUnsubscribe(PeripheralManager{pmgr}, Central{cent}, Characteristic{chr})
+	}
+}
+
+//export BTPeripheralManagerIsReadyToUpdateSubscribers
+func BTPeripheralManagerIsReadyToUpdateSubscribers(pmgr unsafe.Pointer) {
+	btlog.Debugf("PeripheralManagerIsReadyToUpdateSubscribers: pmgr=%v")
+
+	dlg := findPeripheralManagerDlg(pmgr)
+	if dlg != nil {
+		dlg.IsReadyToUpdateSubscribers(PeripheralManager{pmgr})
+	}
+}
+
+//export BTPeripheralManagerDidReceiveReadRequest
+func BTPeripheralManagerDidReceiveReadRequest(pmgr unsafe.Pointer, req unsafe.Pointer) {
+	btlog.Debugf("PeripheralManagerDidReceiveReadRequest: pmgr=%v req=%+v", pmgr, req)
+
+	dlg := findPeripheralManagerDlg(pmgr)
+	if dlg != nil {
+		dlg.DidReceiveReadRequest(PeripheralManager{pmgr}, ATTRequest{req})
+	}
+}
+
+//export BTPeripheralManagerDidReceiveWriteRequests
+func BTPeripheralManagerDidReceiveWriteRequests(pmgr unsafe.Pointer, oa *C.struct_obj_arr) {
+	reqs := make([]ATTRequest, oa.count)
+	for i, _ := range reqs {
+		ptr := getObjArrElem(oa, i)
+		reqs[i] = ATTRequest{ptr}
+	}
+
+	btlog.Debugf("PeripheralManagerDidReceiveWriteRequests: pmgr=%v reqs=%v", pmgr, reqs)
+
+	dlg := findPeripheralManagerDlg(pmgr)
+	if dlg != nil {
+		dlg.DidReceiveWriteRequests(PeripheralManager{pmgr}, reqs)
 	}
 }

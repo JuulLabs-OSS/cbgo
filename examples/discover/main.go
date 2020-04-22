@@ -35,7 +35,7 @@ func block() {
 	}
 }
 
-func (d *MyDelegate) DidUpdateState(cmgr cbgo.CentralManager) {
+func (d *MyDelegate) CentralManagerDidUpdateState(cmgr cbgo.CentralManager) {
 	if cmgr.State() != cbgo.ManagerStatePoweredOn {
 		ch <- fmt.Errorf("central manager has invalid state: have=%d want=%d: is Bluetooth turned on?",
 			cmgr.State(), cbgo.ManagerStatePoweredOn)
@@ -152,6 +152,8 @@ func main() {
 	}
 	devName = os.Args[1]
 
+	//cbgo.SetLogLevel(logrus.DebugLevel)
+
 	cm := cbgo.NewCentralManager(nil)
 	cm.SetDelegate(&MyDelegate{})
 
@@ -168,8 +170,8 @@ func main() {
 
 	discoverProfile(myPrph)
 
-	var chr *cbgo.Characteristic
-	var dsc *cbgo.Descriptor
+	var readableChrs []cbgo.Characteristic
+	var readableDscs []cbgo.Descriptor
 
 	// Print the peer's profile.
 	svcs := myPrph.Services()
@@ -178,42 +180,44 @@ func main() {
 
 		chrs := s.Characteristics()
 		for j, c := range chrs {
-			if chr == nil && c.Properties()&cbgo.CharacteristicPropertyRead != 0 {
+			if c.Properties()&cbgo.CharacteristicPropertyRead != 0 {
 				// This characteristic is readable.  Remember it so that we can
 				// read it later.
-				chr = &chrs[j]
+				readableChrs = append(readableChrs, chrs[j])
 			}
 			fmt.Printf("c       %d: %v\n", j, c.UUID())
 
 			dscs := c.Descriptors()
 			for k, d := range dscs {
-				if dsc == nil {
-					dsc = &dscs[k]
-				}
+				readableDscs = append(readableDscs, dscs[k])
 				fmt.Printf("d           %d: %v\n", k, d.UUID())
 			}
 		}
 	}
 
-	if chr == nil {
+	if len(readableChrs) == 0 {
 		fmt.Printf("no characteristics to read!\n")
 	} else {
-		myPrph.ReadCharacteristic(*chr)
-		block()
+		for _, c := range readableChrs {
+			myPrph.ReadCharacteristic(c)
+			block()
 
-		fmt.Printf("read characteristic:\n")
-		fmt.Printf("    UUID: %v\n", chr.UUID())
-		fmt.Printf("    value: %v\n", hex.EncodeToString(chr.Value()))
+			fmt.Printf("read characteristic:\n")
+			fmt.Printf("    UUID: %v\n", c.UUID())
+			fmt.Printf("    value: %v\n", hex.EncodeToString(c.Value()))
+		}
 	}
 
-	if dsc == nil {
+	if len(readableDscs) == 0 {
 		fmt.Printf("no descriptors to read!\n")
 	} else {
-		myPrph.ReadDescriptor(*dsc)
-		block()
+		for _, d := range readableDscs {
+			myPrph.ReadDescriptor(d)
+			block()
 
-		fmt.Printf("read descriptor:\n")
-		fmt.Printf("    UUID: %v\n", dsc.UUID())
-		fmt.Printf("    value: %v\n", hex.EncodeToString(dsc.Value()))
+			fmt.Printf("read descriptor:\n")
+			fmt.Printf("    UUID: %v\n", d.UUID())
+			fmt.Printf("    value: %v\n", hex.EncodeToString(d.Value()))
+		}
 	}
 }

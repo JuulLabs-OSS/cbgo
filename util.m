@@ -12,7 +12,11 @@ nsdata_to_byte_arr(const NSData *nsdata)
 NSData *
 byte_arr_to_nsdata(const struct byte_arr *ba)
 {
-    return [NSData dataWithBytes: ba->data length: ba->length];
+    if (ba->length == 0) {
+        return nil;
+    } else {
+        return [NSData dataWithBytes: ba->data length: ba->length];
+    }
 }
 
 struct obj_arr
@@ -31,6 +35,19 @@ nsarray_to_obj_arr(const NSArray *arr)
     }
 
     return oa;
+}
+
+NSArray *
+obj_arr_to_nsarray(const struct obj_arr *oa)
+{
+    NSMutableArray *nsa = [[NSMutableArray alloc] init];
+    [nsa autorelease];
+
+    for (int i = 0; i < oa->count; i++) {
+        [nsa addObject:oa->objs[i]];
+    }
+
+    return nsa;
 }
 
 NSString *
@@ -74,6 +91,7 @@ strs_to_nsuuids(const struct string_arr *sa)
     };
 
     NSMutableArray *arr = [[NSMutableArray alloc] init]; 
+    [arr autorelease];
 
     for (int i = 0; i < sa->count; i++) {
         [arr addObject:str_to_nsuuid(sa->strings[i])];
@@ -90,6 +108,7 @@ strs_to_cbuuids(const struct string_arr *sa)
     };
 
     NSMutableArray *arr = [[NSMutableArray alloc] init]; 
+    [arr autorelease];
 
     for (int i = 0; i < sa->count; i++) {
         [arr addObject:str_to_cbuuid(sa->strings[i])];
@@ -106,6 +125,7 @@ strs_to_nsstrings(const struct string_arr *sa)
     };
 
     NSMutableArray *arr = [[NSMutableArray alloc] init]; 
+    [arr autorelease];
 
     for (int i = 0; i < sa->count; i++) {
         [arr addObject:str_to_nsstring(sa->strings[i])];

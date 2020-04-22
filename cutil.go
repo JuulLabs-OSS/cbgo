@@ -8,7 +8,9 @@ package cbgo
 */
 import "C"
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 func mallocArr(numElems int, elemSize uintptr) unsafe.Pointer {
 	return C.malloc(C.size_t(numElems) * C.size_t(elemSize))
@@ -28,7 +30,9 @@ func freeArrElems(arr unsafe.Pointer, elemSize uintptr, count int) {
 		base := uintptr(arr)
 		off := uintptr(i) * elemSize
 		addr := base + off
-		C.free(unsafe.Pointer(addr))
+		pp := unsafe.Pointer(addr)
+		ptr := *(*unsafe.Pointer)(pp)
+		C.free(ptr)
 	}
 }
 
@@ -125,6 +129,7 @@ func mustStrArrToUUIDs(sa *C.struct_string_arr) []UUID {
 
 func freeStrArr(sa *C.struct_string_arr) {
 	freeArrElems(unsafe.Pointer(sa.strings), unsafe.Sizeof(*sa.strings), int(sa.count))
+	C.free(unsafe.Pointer(sa.strings))
 }
 
 func btErrorToNSError(e *C.struct_bt_error) error {

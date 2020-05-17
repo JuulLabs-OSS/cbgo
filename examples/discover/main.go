@@ -157,8 +157,20 @@ func main() {
 	cm := cbgo.NewCentralManager(nil)
 	cm.SetDelegate(&MyDelegate{})
 
-	// Wait for the Bluetooth power on event.
-	block()
+	// Wait for the Bluetooth power on event.  Catalina seems to behave
+	// differently from older macOS versions.  In Catalina, the state change
+	// event is sent immediately after the central manager is constructed.
+	// Older versions wait until the delegate property is assigned (or maybe
+	// they are just a bit slower).  Handle both cases by:
+	//
+	// 1. Block only if the state hasn't changed yet
+	// 2. Drain the channel of a stray state change event (if any).
+	if cm.State() == cbgo.ManagerStateUnknown {
+		block()
+	}
+	for len(ch) > 0 {
+		<-ch
+	}
 
 	cm.Scan(nil, nil)
 	block()

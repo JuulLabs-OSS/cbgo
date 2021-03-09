@@ -8,6 +8,7 @@ import (
 )
 
 const UUID16StringLength = 4
+const UUID32StringLength = 8
 const UUID128StringLength = 36
 
 // UUID is a 16-bit or 128-bit UUID.
@@ -90,6 +91,9 @@ func ParseUUID(s string) (UUID, error) {
 	switch len(s) {
 	case UUID16StringLength:
 		return ParseUUID16(s)
+	case UUID32StringLength:
+		converted := fmt.Sprintf("%s-0000-1000-8000-00805F9B34FB", s)
+		return ParseUUID128(converted)
 	case UUID128StringLength:
 		return ParseUUID128(s)
 	default:
